@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Treasure Hunt Battle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">AI Treasure Hunt Battle</div>
+        <nav class="nav-tabs">
+            <button class="tab-btn active" id="tab-home">Home</button>
+            <button class="tab-btn" id="tab-game">Game Arena</button>
+            <button class="tab-btn" id="tab-info">AI Information</button>
+        </nav>
+    </header>
+
+    <main class="app-main">
+        <section id="view-home" class="view-section active">
+            <div class="hero-card">
+                <h1>Race for the Golden Treasure</h1>
+                <p class="hero-subtitle">An interactive demonstration of Search Algorithms and Constraint Satisfaction Problems in Artificial Intelligence.</p>
+                <div class="setup-form">
+                    <div class="form-group">
+                        <label for="game-mode">Choose Game Mode</label>
+                        <select id="game-mode">
+                            <option value="human-ai">Human vs AI</option>
+                            <option value="ai-ai">AI vs AI</option>
+                        </select>
+                    </div>
+                    <div class="algorithm-selection-row">
+                        <div class="form-group">
+                            <label for="grid-size">Grid Size</label>
+                            <select id="grid-size">
+                                <option value="8" selected>8x8 Arena</option>
+                                <option value="10">10x10 Arena</option>
+                                <option value="12">12x12 Arena</option>
+                                <option value="16">16x16 Arena</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="difficulty">Obstacle Density</label>
+                            <select id="difficulty">
+                                <option value="easy">Easy (15% obstacles)</option>
+                                <option value="medium" selected>Medium (25% obstacles)</option>
+                                <option value="hard">Hard (35% obstacles)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group toggle-group">
+                        <label class="switch-container">
+                            <input type="checkbox" id="balanced-spawn" checked>
+                            <span class="switch-slider"></span>
+                            <span class="switch-label">Balanced Spawn (Equidistant start paths to treasure)</span>
+                        </label>
+                    </div>
+                    <div class="algorithm-selection-row">
+                        <div class="form-group" id="player1-algo-group">
+                            <label for="player1-algo">Player 1 (Human) Algorithm</label>
+                            <select id="player1-algo" disabled>
+                                <option value="manual">Manual Arrow Controls</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="player2-algo" id="player2-algo-label">Player 2 (AI) Algorithm</label>
+                            <select id="player2-algo">
+                                <option value="astar">A* Search</option>
+                                <option value="bfs">Breadth-First Search (BFS)</option>
+                                <option value="dfs">Depth-First Search (DFS)</option>
+                                <option value="greedy">Greedy Best-First Search</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-start-game">Start Battle</button>
+                </div>
+            </div>
+
+            <div class="rules-card">
+                <h2>Game Rules & Specifications</h2>
+                <div class="rules-grid">
+                    <div class="rule-item">
+                        <div class="rule-icon">🗺️</div>
+                        <h3>8x8 Grid Arena</h3>
+                        <p>The game takes place on an 8x8 coordinate board containing random obstacles and a single target treasure.</p>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">🏁</div>
+                        <h3>Dual Corners</h3>
+                        <p>Player 1 starts at the Top-Left corner (0,0). Player 2 starts at the Bottom-Right corner (7,7).</p>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">🚫</div>
+                        <h3>CSP Constraints</h3>
+                        <p>No diagonal moves. You cannot traverse obstacles or step outside the boundaries of the grid.</p>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">🏆</div>
+                        <h3>Winning Condition</h3>
+                        <p>First player to land on the treasure cell wins. Turn-based movement ensures fairness.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-game" class="view-section">
+            <div class="game-layout">
+                <div class="game-left">
+                    <div class="grid-container">
+                        <div id="game-grid" class="game-grid"></div>
+                    </div>
+                    <div class="hint-control-wrapper hidden" id="hint-control-wrapper">
+                        <label class="switch-container">
+                            <input type="checkbox" id="show-hint" checked>
+                            <span class="switch-slider"></span>
+                            <span class="switch-label">Show Optimal Hint Path (BFS)</span>
+                        </label>
+                    </div>
+                    <div class="game-controls">
+                        <button class="btn btn-secondary" id="btn-reset">Reset Map</button>
+                        <button class="btn btn-primary" id="btn-play-turn">Play Turn</button>
+                        <button class="btn btn-accent" id="btn-auto-play">Auto Play</button>
+                        <button class="btn btn-info" id="btn-analytics">📊 Performance Analysis</button>
+                    </div>
+                    <div class="control-hint" id="keyboard-hint">
+                        <span>⌨️ Use keyboard arrow keys to move Player 1</span>
+                    </div>
+
+                    <div class="winner-analysis-panel hidden" id="winner-analysis-panel">
+                        <h2>🏆 Winner Analysis & Reasoning</h2>
+                        <div class="winner-analysis-content">
+                            <div class="analysis-item">
+                                <span class="analysis-label">Winner:</span>
+                                <span class="analysis-value text-winner" id="wa-winner">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Theoretical Favorite:</span>
+                                <span class="analysis-value text-favorite" id="wa-favorite">-</span>
+                            </div>
+                            <div class="analysis-item-block">
+                                <span class="analysis-label">Reason for Winning:</span>
+                                <p class="analysis-text" id="wa-reason">-</p>
+                            </div>
+                            
+                            <div class="analysis-comparison-row">
+                                <div class="comparison-card" id="wa-p1-card">
+                                    <h3>Player 1</h3>
+                                    <ul>
+                                        <li><strong>Path Length:</strong> <span id="wa-p1-path">-</span></li>
+                                        <li><strong>Nodes Visited:</strong> <span id="wa-p1-nodes">-</span></li>
+                                        <li><strong>Execution Time:</strong> <span id="wa-p1-time">-</span></li>
+                                    </ul>
+                                </div>
+                                <div class="comparison-card" id="wa-p2-card">
+                                    <h3>Player 2</h3>
+                                    <ul>
+                                        <li><strong>Path Length:</strong> <span id="wa-p2-path">-</span></li>
+                                        <li><strong>Nodes Visited:</strong> <span id="wa-p2-nodes">-</span></li>
+                                        <li><strong>Execution Time:</strong> <span id="wa-p2-time">-</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="analysis-item-block">
+                                <span class="analysis-label">AI Insight:</span>
+                                <p class="analysis-text insight-text" id="wa-insight">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-right">
+                    <div class="winner-alert hidden" id="winner-alert"></div>
+                    
+                    <div class="stats-panel">
+                        <h2>Battle Statistics</h2>
+                        <div class="player-stats-card p1">
+                            <div class="card-header">
+                                <span class="player-dot p1-dot"></span>
+                                <span class="player-name" id="p1-name-display">Player 1 (Human)</span>
+                            </div>
+                            <div class="stats-row">
+                                <div class="stat-box">
+                                    <span class="stat-value" id="p1-moves">0</span>
+                                    <span class="stat-label">Moves Made</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-value" id="p1-nodes">0</span>
+                                    <span class="stat-label">Nodes Visited</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-value" id="p1-time">0 ms</span>
+                                    <span class="stat-label">Solve Time</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="player-stats-card p2">
+                            <div class="card-header">
+                                <span class="player-dot p2-dot"></span>
+                                <span class="player-name" id="p2-name-display">Player 2 (AI)</span>
+                            </div>
+                            <div class="stats-row">
+                                <div class="stat-box">
+                                    <span class="stat-value" id="p2-moves">0</span>
+                                    <span class="stat-label">Moves Made</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-value" id="p2-nodes">0</span>
+                                    <span class="stat-label">Nodes Visited</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-value" id="p2-time">0 ms</span>
+                                    <span class="stat-label">Solve Time</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="explainable-ai-panel">
+                        <h2>Explainable AI (XAI) logs</h2>
+                        <div class="xai-content">
+                            <div class="xai-item">
+                                <span class="xai-label">Active Turn:</span>
+                                <span class="xai-value" id="xai-active-turn">-</span>
+                            </div>
+                            <div class="xai-item">
+                                <span class="xai-label">Algorithm:</span>
+                                <span class="xai-value text-highlight" id="xai-algo">-</span>
+                            </div>
+                            <div class="xai-item">
+                                <span class="xai-label">Path Length:</span>
+                                <span class="xai-value" id="xai-path-len">-</span>
+                            </div>
+                            <div class="xai-item-block">
+                                <span class="xai-label">Decisional Logic & Reasoning:</span>
+                                <p class="xai-text" id="xai-reasoning">Start the game to observe the AI planning and search explanation.</p>
+                            </div>
+                            <div class="xai-item-block">
+                                <span class="xai-label">CSP Forward Checking State:</span>
+                                <div class="csp-visualizer" id="csp-visual"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-info" class="view-section">
+            <div class="info-container">
+                <div class="info-card">
+                    <h2>PEAS Agent Specifications</h2>
+                    <table class="peas-table">
+                        <thead>
+                            <tr>
+                                <th>Agent Element</th>
+                                <th>Description / Functionality</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Performance Measure</strong></td>
+                                <td>Reach the golden treasure first, minimize total moves, minimize execution/solving time, and avoid dead ends.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Environment</strong></td>
+                                <td>An 8x8 discrete grid containing static randomly placed obstacles, fixed start positions, and a random treasure cell.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Actuators</strong></td>
+                                <td>Orthogonal movements: Up, Down, Left, Right (movement vector adjustments).</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Sensors</strong></td>
+                                <td>Position sensor (current row/col), environment map sensor (obstacle placements), and target location sensor (treasure coordinates).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="algorithms-grid">
+                    <div class="algo-card">
+                        <h3>Breadth-First Search (BFS)</h3>
+                        <div class="algo-badge queue">Queue (FIFO)</div>
+                        <p>BFS systematically expands the search frontier level by level. In an unweighted grid with uniform step cost, BFS is guaranteed to discover the optimal path with the absolute minimum number of steps. It does not use heuristics, resulting in wider exploration of nodes.</p>
+                    </div>
+
+                    <div class="algo-card">
+                        <h3>Depth-First Search (DFS)</h3>
+                        <div class="algo-badge stack">Stack (LIFO)</div>
+                        <p>DFS drives deep down a single branch before backtracking. Since it uses a stack, it searches sequentially along paths until it hits an obstacle or boundary, backtracks, and tries another direction. It is not optimal and can find highly inefficient paths.</p>
+                    </div>
+
+                    <div class="algo-card">
+                        <h3>Greedy Best-First Search</h3>
+                        <div class="algo-badge heuristic">Heuristic (Manhattan)</div>
+                        <p>Greedy Best-First Search prioritizes expansion based solely on a heuristic function estimation. It calculates the Manhattan distance to the treasure: h(n) = |x1 - x2| + |y1 - y2|, and moves to the cell with the lowest value. It is fast, but easily blocked by obstacles.</p>
+                    </div>
+
+                    <div class="algo-card">
+                        <h3>A* Search Algorithm</h3>
+                        <div class="algo-badge astar">f(n) = g(n) + h(n)</div>
+                        <p>A* Search evaluates cells using a combined cost function: f(n) = g(n) + h(n). Here, g(n) is the step cost incurred from the start node to the current cell, and h(n) is the heuristic Manhattan distance to the treasure. This balances path efficiency and search speed, making it optimal and complete.</p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h2>Constraint Satisfaction Features (CSP)</h2>
+                    <p>The game implements multiple layers of constraint satisfaction to govern all entity movements:</p>
+                    <ul>
+                        <li><strong>Boundary Constraint:</strong> Ensures row and column indices remain within [0, 7].</li>
+                        <li><strong>Obstacle Constraint:</strong> Prunes any neighbor node that overlaps with a blocked cell.</li>
+                        <li><strong>Forward Checking:</strong> Before any physical move, the agent scans its list of adjacent neighbors and verifies that at least one reachable path to the treasure exists from each neighbor. Neighbors with zero path solutions are flagged as invalid or pruned to prevent trapping the agent.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; 2026 AI Treasure Hunt Battle - College Mini Project Demonstration</p>
+    </footer>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
